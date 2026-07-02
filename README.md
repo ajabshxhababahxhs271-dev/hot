@@ -1,5 +1,66 @@
 # 全球热点实时聚合与 AI 分类展示
 
+## 线上部署
+
+生产环境推荐使用：
+
+- Vercel：部署 Next.js 应用
+- Neon PostgreSQL：线上数据库
+- Vercel Cron：定时触发 `/api/cron/crawl`
+
+不要把真实数据库连接字符串提交到 GitHub。连接字符串只放在本地 `.env`
+或 Vercel Environment Variables。
+
+### Neon
+
+1. 在 Neon 创建 PostgreSQL 项目
+2. 复制连接字符串，格式类似：
+
+```bash
+postgresql://USER:PASSWORD@HOST.neon.tech/DB?sslmode=require
+```
+
+3. 本地创建 `.env`，填入：
+
+```bash
+DATABASE_URL="你的 Neon 连接字符串"
+```
+
+`.env` 已被 `.gitignore` 忽略，不要提交。
+
+### 初始化线上数据库
+
+连接 Neon 后运行：
+
+```bash
+npx prisma db push
+npm run seed
+```
+
+如需先采集一批数据：
+
+```bash
+npm run crawl
+```
+
+### Vercel
+
+1. 将代码推送到 GitHub
+2. 在 Vercel 导入 GitHub 仓库
+3. 在 Vercel 的 `Settings -> Environment Variables` 添加：
+
+```bash
+DATABASE_URL=你的 Neon 连接字符串
+```
+
+4. 重新 Deploy
+
+项目包含 `vercel.json`，会每 10 分钟调用一次：
+
+```txt
+/api/cron/crawl
+```
+
 ## 快速开始
 
 ```bash
@@ -77,4 +138,4 @@ npm run crawl -- hacker-news     # 手动采集单个源
 
 ## 技术栈
 
-Next.js 16 · shadcn/ui v4 (Base UI) · Tailwind CSS v4 · Prisma + SQLite · Recharts · RSS Parser · Cheerio · Bilibili Public API
+Next.js 16 · shadcn/ui v4 (Base UI) · Tailwind CSS v4 · Prisma + PostgreSQL · Recharts · RSS Parser · Cheerio · Bilibili Public API
