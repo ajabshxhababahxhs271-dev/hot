@@ -1,0 +1,89 @@
+// ─── Global Hot Topics Aggregator — Data Model ───
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model HotItem {
+  id            String   @id @default(cuid())
+  title         String
+  url           String
+  sourceId      String
+  sourceName    String
+  source        Source   @relation(fields: [sourceId], references: [id])
+  region        String   @default("global")
+  category      String   @default("other")
+  aiSubcategory String?
+  language      String   @default("zh")
+  summary       String?
+  rawContent    String?
+  score         Int      @default(0)
+  rank          Int?
+  heat          Int      @default(0)
+  fingerprint   String   @unique
+  tags          String   @default("")
+  publishedAt   DateTime?
+  collectedAt   DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  crawlRunId    String?
+  crawlRun      CrawlRun? @relation(fields: [crawlRunId], references: [id])
+
+  @@index([region])
+  @@index([category])
+  @@index([aiSubcategory])
+  @@index([sourceId])
+  @@index([collectedAt])
+  @@index([publishedAt])
+  @@index([heat])
+  @@index([region, category])
+}
+
+model Source {
+  id                  String   @id @default(cuid())
+  name                String   @unique
+  slug                String   @unique
+  type                String   @default("rss")
+  region              String   @default("global")
+  defaultCategory     String   @default("other")
+  url                 String
+  enabled             Boolean  @default(true)
+  fetchIntervalMinutes Int     @default(15)
+  lastFetchedAt       DateTime?
+  lastSuccessAt       DateTime?
+  lastError           String?
+  lastStatus          String   @default("idle")
+  itemCount           Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  items     HotItem[]
+  crawlRuns CrawlRun[]
+}
+
+model CrawlRun {
+  id           String   @id @default(cuid())
+  sourceId     String
+  source       Source   @relation(fields: [sourceId], references: [id])
+  status       String   @default("running")
+  startedAt    DateTime @default(now())
+  finishedAt   DateTime?
+  itemCount    Int      @default(0)
+  newItems     Int      @default(0)
+  skippedItems Int      @default(0)
+  errorMessage String?
+
+  hotItems HotItem[]
+}
+
+model Tag {
+  id    String @id @default(cuid())
+  name  String @unique
+  slug  String @unique
+  count Int    @default(0)
+}
