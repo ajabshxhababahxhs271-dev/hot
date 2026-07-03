@@ -101,6 +101,7 @@ npm run dev         # → http://localhost:3000
 | MIT Tech Review | 🌍 国际 | RSS | 科技/AI |
 | Science Daily AI | 🌍 国际 | RSS | AI |
 | Techmeme | 🌍 国际 | RSS | 科技 |
+| Bloomberg via Google News | 🌍 国际 | RSS | 财经 |
 
 ### ⏸ 因网络限制暂时 disabled（18 个）
 
@@ -108,6 +109,7 @@ npm run dev         # → http://localhost:3000
 
 - 机器之心 / 量子位 / 澎湃新闻 / 央视新闻 (RSSHub 超时)
 - 百度热搜 / 微博热搜 / 知乎热榜 (反爬/需认证)
+- Bloomberg Official Markets (官方候选 feed 本地测试 SSL/超时失败；保留 disabled，使用 Bloomberg via Google News 保底)
 - Reddit 系列 (RSS 超时)
 - OpenAI / Anthropic / DeepMind Blog (RSSHub 超时)
 - arXiv AI / Papers With Code / GitHub Trending (RSSHub 超时)

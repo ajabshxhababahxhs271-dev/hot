@@ -33,8 +33,9 @@ const sources = [
   { name:'MIT Tech Review',slug:'mit-tech-review-direct',type:'rss',region:'global',defaultCategory:'tech',url:'https://www.technologyreview.com/feed/',fetchIntervalMinutes:30,enabled:true },
   { name:'Science Daily AI',slug:'sciencedaily-ai',type:'rss',region:'global',defaultCategory:'ai',url:'https://www.sciencedaily.com/rss/computers_math/artificial_intelligence.xml',fetchIntervalMinutes:30,enabled:true },
   { name:'Techmeme',slug:'techmeme',type:'rss',region:'global',defaultCategory:'tech',url:'https://www.techmeme.com/feed.xml',fetchIntervalMinutes:15,enabled:true },
-  // ── 财经/商业 (Bloomberg 无公开 RSS，用可访问替代源) ──
+  // ── 财经/商业：Bloomberg 保底 + 官方候选 ──
   { name:'Bloomberg via Google News',slug:'bloomberg-news',type:'rss',region:'global',defaultCategory:'finance',url:'https://news.google.com/rss/search?q=bloomberg&hl=en-US&gl=US&ceid=US:en',fetchIntervalMinutes:20,enabled:true },
+  { name:'Bloomberg Official Markets',slug:'bloomberg-official-markets',type:'rss',region:'global',defaultCategory:'finance',url:'https://feeds.bloomberg.com/markets/news.rss',fetchIntervalMinutes:30,enabled:false,lastError:'Official Bloomberg feed candidate failed local access test: SSL connection error / timeout. Keep disabled; Bloomberg via Google News remains enabled as fallback.' },
   { name:'CNBC Top News',slug:'cnbc-top',type:'rss',region:'global',defaultCategory:'business',url:'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=100003114',fetchIntervalMinutes:20,enabled:true },
   { name:'MarketWatch Top Stories',slug:'marketwatch',type:'rss',region:'global',defaultCategory:'finance',url:'https://feeds.content.dowjones.io/public/rss/mw_topstories',fetchIntervalMinutes:30,enabled:true },
   // ── disabled: RSSHub/Reddit sources ──
