@@ -12,4 +12,10 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) { return GET(request) }
+export async function GET(request: Request) {
+  return handleCrawlRequest(request)
+}
+
+export async function POST(request: Request) {
+  return handleCrawlRequest(request)
+}
