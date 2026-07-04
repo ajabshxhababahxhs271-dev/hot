@@ -51,6 +51,7 @@ npm run crawl
 
 ```bash
 DATABASE_URL=你的 Neon 连接字符串
+CRON_SECRET=一个足够长的随机密钥
 ```
 
 4. 重新 Deploy
