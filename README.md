@@ -56,11 +56,19 @@ CRON_SECRET=一个足够长的随机密钥
 
 4. 重新 Deploy
 
-项目包含 `vercel.json`，会每 10 分钟调用一次：
+项目包含 `vercel.json`，在 Vercel Hobby 免费版上会每天调用一次：
 
 ```txt
 /api/cron/crawl
 ```
+
+如需更高频率，可以使用外部定时器每 10 分钟请求：
+
+```txt
+https://你的域名.vercel.app/api/cron/crawl?secret=你的 CRON_SECRET
+```
+
+外部定时器推荐使用 cron-job.org。不要把 `CRON_SECRET` 提交到 GitHub。
 
 ## 快速开始
 
