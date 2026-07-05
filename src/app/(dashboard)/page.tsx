@@ -6,6 +6,7 @@ import { CollectChart } from '@/components/dashboard/collect-chart'
 import { CategoryBreakdown } from '@/components/dashboard/category-breakdown'
 import { getDashboardStats, getHotItems, getCategoryStats, getHotItemsByHour } from '@/lib/data'
 import { Globe, Flag, Cpu, Radio, Zap } from 'lucide-react'
+import { formatTime } from '@/lib/format-date'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 60
@@ -25,7 +26,7 @@ export default async function HomePage() {
         <StatCard title="国内热点" value={stats.chinaItems.toLocaleString()} subtitle="china" icon={<Flag className="h-4 w-4" />} />
         <StatCard title="国际热点" value={stats.globalItems.toLocaleString()} subtitle="global" icon={<Globe className="h-4 w-4" />} />
         <StatCard title="AI 热点" value={stats.aiItems.toLocaleString()} subtitle="AI" icon={<Cpu className="h-4 w-4" />} />
-        <StatCard title="数据源" value={stats.sourceCount.toString()} subtitle={stats.lastCrawlAt ? `最近: ${new Date(stats.lastCrawlAt).toLocaleTimeString('zh-CN')}` : '尚未采集'} icon={<Radio className="h-4 w-4" />} />
+        <StatCard title="数据源" value={stats.sourceCount.toString()} subtitle={stats.lastCrawlAt ? `最近: ${formatTime(stats.lastCrawlAt)}` : '尚未采集'} icon={<Radio className="h-4 w-4" />} />
       </div>
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2"><CollectChart data={hourly} /></div>

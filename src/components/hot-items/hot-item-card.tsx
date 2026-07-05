@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge'
 import { Flame, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { HotItem } from '@prisma/client'
+import { formatDateTimeShort } from '@/lib/format-date'
 
 const regionBadge: Record<string, { label: string; className: string }> = {
   china: { label: '国内', className: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' },
@@ -14,19 +15,10 @@ const aiSubLabels: Record<string, string> = { model:'大模型', product:'AI产�
 
 interface Props { item: Pick<HotItem, 'id'|'title'|'url'|'region'|'category'|'aiSubcategory'|'heat'|'score'|'collectedAt'|'sourceName'|'tags'> }
 
-function formatCollectedAt(value: Date) {
-  return new Intl.DateTimeFormat('zh-CN', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(value)
-}
-
 export function HotItemCard({ item }: Props) {
   const region = regionBadge[item.region] ?? regionBadge.global
   const tags = item.tags ? item.tags.split(',').filter(Boolean) : []
-  const collectedAt = formatCollectedAt(item.collectedAt)
+  const collectedAt = formatDateTimeShort(item.collectedAt)
 
   return (
     <Link href={`/hot-items/${item.id}`} className="block rounded-lg border bg-card p-4 transition-colors hover:border-primary/50 hover:bg-accent/30">

@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator'
 import { getHotItemById } from '@/lib/data'
 import { ExternalLink, ArrowLeft, Flame, Clock, Globe, Tag } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { formatDateTime } from '@/lib/format-date'
 
 export const dynamic = 'force-dynamic'; export const revalidate = 60
 
@@ -29,8 +30,8 @@ export default async function HotItemDetailPage({ params }: { params: Promise<{ 
             <div className="flex items-center gap-2"><Flame className="h-4 w-4 text-orange-500" /><dt className="text-muted-foreground">热度:</dt><dd className="font-semibold tabular-nums">{item.heat}</dd></div>
             <div className="flex items-center gap-2"><dt className="text-muted-foreground">评分:</dt><dd className="font-semibold tabular-nums">{item.score}</dd></div>
             {item.rank && <div className="flex items-center gap-2"><dt className="text-muted-foreground">排名:</dt><dd className="font-semibold tabular-nums">#{item.rank}</dd></div>}
-            <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-muted-foreground" /><dt className="text-muted-foreground">采集于:</dt><dd className="tabular-nums">{new Date(item.collectedAt).toLocaleString('zh-CN')}</dd></div>
-            {item.publishedAt && <div className="flex items-center gap-2 col-span-2"><Globe className="h-4 w-4 text-muted-foreground" /><dt className="text-muted-foreground">发布于:</dt><dd className="tabular-nums">{new Date(item.publishedAt).toLocaleString('zh-CN')}</dd></div>}
+            <div className="flex items-center gap-2"><Clock className="h-4 w-4 text-muted-foreground" /><dt className="text-muted-foreground">采集于:</dt><dd className="tabular-nums">{formatDateTime(item.collectedAt)}</dd></div>
+            {item.publishedAt && <div className="flex items-center gap-2 col-span-2"><Globe className="h-4 w-4 text-muted-foreground" /><dt className="text-muted-foreground">发布于:</dt><dd className="tabular-nums">{formatDateTime(item.publishedAt)}</dd></div>}
           </dl>
           {tags.length > 0 && <><Separator /><div className="flex items-start gap-2"><Tag className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" /><div className="flex flex-wrap gap-1.5">{tags.map(t => <Badge key={t} variant="secondary" className="text-xs">{t}</Badge>)}</div></div></>}
           {item.summary && <><Separator /><div><h3 className="text-sm font-semibold mb-2">摘要</h3><p className="text-sm text-muted-foreground leading-relaxed">{item.summary}</p></div></>}

@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge'
 import { getCrawlRuns } from '@/lib/data'
 import { ListChecks, CheckCircle2, XCircle, AlertTriangle, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { formatDateTime } from '@/lib/format-date'
 
 export const dynamic = 'force-dynamic'; export const revalidate = 60
 
@@ -22,7 +23,7 @@ export default async function CrawlLogPage() {
         <div className="flex flex-col items-center justify-center py-20"><div className="text-4xl mb-3">📋</div><p className="text-muted-foreground">暂无采集记录</p></div>
       ) : (
         <div className="space-y-2">{runs.map(run => { const c = cfg[run.status] ?? cfg.failed; const dur = run.finishedAt ? Math.round((new Date(run.finishedAt).getTime() - new Date(run.startedAt).getTime()) / 1000) : null
-          return <Card key={run.id}><CardContent className="p-4"><div className="flex items-center justify-between gap-4"><div className="flex-1 min-w-0"><div className="flex items-center gap-2"><span className="font-medium text-sm">{run.source.name}</span><Badge className={cn('text-[10px] px-1.5 py-0', c.className)}><span className="flex items-center gap-1">{c.icon}{c.label}</span></Badge></div><div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground"><span>{new Date(run.startedAt).toLocaleString('zh-CN')}</span>{dur !== null && <span>{dur}s</span>}<span>共{run.itemCount} · 新增{run.newItems} · 跳过{run.skippedItems}</span></div>{run.errorMessage && <p className="mt-1 text-xs text-red-600 truncate">{run.errorMessage}</p>}</div></div></CardContent></Card>
+          return <Card key={run.id}><CardContent className="p-4"><div className="flex items-center justify-between gap-4"><div className="flex-1 min-w-0"><div className="flex items-center gap-2"><span className="font-medium text-sm">{run.source.name}</span><Badge className={cn('text-[10px] px-1.5 py-0', c.className)}><span className="flex items-center gap-1">{c.icon}{c.label}</span></Badge></div><div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground"><span>{formatDateTime(run.startedAt)}</span>{dur !== null && <span>{dur}s</span>}<span>共{run.itemCount} · 新增{run.newItems} · 跳过{run.skippedItems}</span></div>{run.errorMessage && <p className="mt-1 text-xs text-red-600 truncate">{run.errorMessage}</p>}</div></div></CardContent></Card>
         })}</div>
       )}
     </div>
