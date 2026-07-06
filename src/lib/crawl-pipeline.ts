@@ -45,8 +45,12 @@ export async function runCrawlPipeline(sourceId: string) {
   }
 }
 
-export async function crawlAllSources() {
-  const sources = await prisma.source.findMany({ where: { enabled: true }, orderBy: { lastFetchedAt: { sort: 'asc', nulls: 'first' } } })
+export async function crawlAllSources(limit?: number) {
+  const sources = await prisma.source.findMany({
+    where: { enabled: true },
+    orderBy: { lastFetchedAt: { sort: 'asc', nulls: 'first' } },
+    ...(limit ? { take: limit } : {}),
+  })
   const results = []
   for (const source of sources) { console.log(`🕷 ${source.name}...`); const result = await runCrawlPipeline(source.id); console.log(`  ${result.status === 'success' ? '✅' : result.status === 'partial' ? '⚠️' : '❌'} ${result.newItems} new`); results.push({ source: source.slug, ...result }) }
   return results

@@ -68,7 +68,7 @@ CRON_SECRET=一个足够长的随机密钥
 https://你的域名.vercel.app/api/cron/crawl?secret=你的 CRON_SECRET
 ```
 
-外部定时器推荐使用 cron-job.org。不要把 `CRON_SECRET` 提交到 GitHub。
+外部定时器推荐使用 cron-job.org。接口会快速返回 `{ "accepted": true }`，实际采集在后台继续执行，避免免费服务因等待太久判定失败。接口默认每次采集 6 个最久未采集的数据源，也可以通过 `&limit=1` 到 `&limit=8` 调整单次采集数量。手动测试完整结果时可临时加 `&sync=1`。不要把 `CRON_SECRET` 提交到 GitHub。
 
 ## 快速开始
 

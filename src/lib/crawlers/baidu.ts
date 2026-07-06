@@ -37,7 +37,7 @@ export const baiduCrawler: Crawler = {
           Accept: 'application/json',
           Referer: 'https://top.baidu.com/',
         },
-        signal: AbortSignal.timeout(15000),
+        signal: AbortSignal.timeout(8000),
       })
 
       if (!res.ok) {

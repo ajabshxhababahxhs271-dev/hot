@@ -43,7 +43,7 @@ export const juejinCrawler: Crawler = {
           Accept: 'application/json',
           Referer: 'https://juejin.cn/',
         },
-        signal: AbortSignal.timeout(15000),
+        signal: AbortSignal.timeout(8000),
       })
 
       if (!res.ok) {

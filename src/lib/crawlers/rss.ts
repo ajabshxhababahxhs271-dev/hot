@@ -2,7 +2,7 @@ import RssParser from 'rss-parser'
 import type { Crawler, CrawlResult, RawItem } from './types'
 
 const parser = new RssParser({
-  timeout: 30000,
+  timeout: 8000,
   headers: {
     'User-Agent': 'Mozilla/5.0 (compatible; HotTopicsAggregator/1.0; RSS Reader)',
     Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml',
