@@ -23,12 +23,13 @@ export async function runCrawlPipeline(sourceId: string) {
         const fingerprint = generateFingerprint(raw.title, raw.url)
         const existing = await prisma.hotItem.findUnique({ where: { fingerprint } })
         if (existing) {
-          await prisma.hotItem.update({ where: { id: existing.id }, data: { score: Math.max(existing.score, raw.score ?? 0), heat: existing.heat + 1, collectedAt: new Date() } })
+          await prisma.hotItem.update({ where: { id: existing.id }, data: { score: Math.max(existing.score, raw.score ?? 0), rank: raw.rank ?? existing.rank, heat: Math.max(existing.heat + 1, raw.heat ?? 0), collectedAt: new Date() } })
           skippedItems++; continue
         }
         const classification = classify({ title: raw.title, summary: raw.summary, url: raw.url, sourceName: source.name, defaultCategory: source.defaultCategory, defaultRegion: source.region })
-        await prisma.hotItem.create({ data: { title: raw.title, url: raw.url, sourceId: source.id, sourceName: source.name, region: classification.region, category: classification.category, aiSubcategory: classification.aiSubcategory, language: classification.language, summary: raw.summary ?? null, rawContent: raw.rawContent ?? null, score: raw.score ?? 0, rank: raw.rank ?? null, heat: raw.heat ?? 1, fingerprint, tags: classification.tags.join(','), publishedAt: raw.publishedAt ?? null, collectedAt: new Date(), crawlRunId: run.id } })
-        for (const tag of classification.tags) { await prisma.tag.upsert({ where: { name: tag }, update: { count: { increment: 1 } }, create: { name: tag, slug: tag.toLowerCase().replace(/\s+/g,'-'), count: 1 } }) }
+        const tags = [...new Set([...classification.tags, ...(raw.tags ?? [])])]
+        await prisma.hotItem.create({ data: { title: raw.title, url: raw.url, sourceId: source.id, sourceName: source.name, region: classification.region, category: classification.category, aiSubcategory: classification.aiSubcategory, language: classification.language, summary: raw.summary ?? null, rawContent: raw.rawContent ?? null, score: raw.score ?? 0, rank: raw.rank ?? null, heat: raw.heat ?? 1, fingerprint, tags: tags.join(','), publishedAt: raw.publishedAt ?? null, collectedAt: new Date(), crawlRunId: run.id } })
+        for (const tag of tags) { await prisma.tag.upsert({ where: { name: tag }, update: { count: { increment: 1 } }, create: { name: tag, slug: tag.toLowerCase().replace(/\s+/g,'-'), count: 1 } }) }
         newItems++
       } catch (itemErr) { console.error(`Error processing "${raw.title}":`, itemErr) }
     }

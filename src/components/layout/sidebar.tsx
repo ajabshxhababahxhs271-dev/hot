@@ -2,10 +2,12 @@
 
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { LayoutDashboard, Globe, Flag, Cpu, BarChart3, Radio, ListChecks, Settings } from 'lucide-react'
+import { LayoutDashboard, Flame, GitFork, Globe, Flag, Cpu, BarChart3, Radio, ListChecks, Settings } from 'lucide-react'
 
 const navigation = [
   { name: '实时总览', href: '/', icon: LayoutDashboard },
+  { name: '每日热搜榜', href: '/daily', icon: Flame },
+  { name: 'GitHub 每日热搜榜', href: '/github', icon: GitFork },
   { name: '国内热点', href: '/china', icon: Flag },
   { name: '国际热点', href: '/global', icon: Globe },
   { name: 'AI 热点', href: '/ai', icon: Cpu },

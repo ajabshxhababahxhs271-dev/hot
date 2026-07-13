@@ -5,6 +5,7 @@ import { createApiCrawler, type ApiCrawlerConfig } from './api'
 import { bilibiliCrawler } from './bilibili'
 import { baiduCrawler } from './baidu'
 import { juejinCrawler } from './juejin'
+import { githubTrendingCrawler } from './github-trending'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const typeRegistry: Record<string, any> = {
@@ -20,6 +21,7 @@ const typeRegistry: Record<string, any> = {
   bilibili: bilibiliCrawler,
   baidu: baiduCrawler,
   juejin: juejinCrawler,
+  githubTrending: githubTrendingCrawler,
   hackerNews: hackerNewsCrawler,
 }
 
@@ -29,6 +31,7 @@ const slugRegistry: Record<string, Crawler> = {
   'bilibili-hot': bilibiliCrawler,
   'baidu-hot': baiduCrawler,
   'juejin-hot': juejinCrawler,
+  'github-trending-daily': githubTrendingCrawler,
 }
 
 // ─── Slug-based API configs (for sources using the api type) ──
@@ -78,3 +81,4 @@ export { rssCrawler } from './rss'
 export { createHtmlCrawler, hackerNewsCrawler, type HtmlCrawlerConfig } from './html'
 export { createApiCrawler, type ApiCrawlerConfig } from './api'
 export { bilibiliCrawler } from './bilibili'
+export { githubTrendingCrawler } from './github-trending'

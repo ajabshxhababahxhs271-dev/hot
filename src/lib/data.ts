@@ -7,6 +7,22 @@ export interface HotItemFilters {
   limit?: number; offset?: number
 }
 
+const SHANGHAI_UTC_OFFSET_MS = 8 * 60 * 60 * 1000
+const DAY_MS = 24 * 60 * 60 * 1000
+
+function getShanghaiDayRange(now = new Date()) {
+  const shanghaiNow = new Date(now.getTime() + SHANGHAI_UTC_OFFSET_MS)
+  const start = new Date(
+    Date.UTC(
+      shanghaiNow.getUTCFullYear(),
+      shanghaiNow.getUTCMonth(),
+      shanghaiNow.getUTCDate()
+    ) - SHANGHAI_UTC_OFFSET_MS
+  )
+
+  return { start, end: new Date(start.getTime() + DAY_MS) }
+}
+
 export async function getHotItems(filters: HotItemFilters = {}) {
   const { region, category, aiSubcategory, sourceId, search, language, sort = 'collectedAt', limit = 50, offset = 0 } = filters
   const where: Prisma.HotItemWhereInput = {}
@@ -19,6 +35,43 @@ export async function getHotItems(filters: HotItemFilters = {}) {
   const orderBy: Prisma.HotItemOrderByWithRelationInput = sort === 'heat' ? { heat: 'desc' } : sort === 'score' ? { score: 'desc' } : sort === 'publishedAt' ? { publishedAt: 'desc' } : { collectedAt: 'desc' }
   const [items, total] = await Promise.all([prisma.hotItem.findMany({ where, orderBy, take: limit, skip: offset, include: { source: { select: { name: true, slug: true, region: true } } } }), prisma.hotItem.count({ where })])
   return { items, total }
+}
+
+export async function getDailyHotItems(limit = 100) {
+  const { start, end } = getShanghaiDayRange()
+
+  return prisma.hotItem.findMany({
+    where: { collectedAt: { gte: start, lt: end } },
+    orderBy: [{ heat: 'desc' }, { score: 'desc' }, { collectedAt: 'desc' }],
+    take: limit,
+    include: { source: { select: { name: true, slug: true, region: true } } },
+  })
+}
+
+export async function getGithubDailyHotItems(limit = 50) {
+  const { start, end } = getShanghaiDayRange()
+  const sourceWhere: Prisma.HotItemWhereInput = { source: { slug: 'github-trending-daily' } }
+  const include = { source: { select: { name: true, slug: true, region: true } } } as const
+  const orderBy: Prisma.HotItemOrderByWithRelationInput[] = [
+    { rank: 'asc' },
+    { heat: 'desc' },
+  ]
+
+  const todayItems = await prisma.hotItem.findMany({
+    where: { ...sourceWhere, collectedAt: { gte: start, lt: end } },
+    orderBy,
+    take: limit,
+    include,
+  })
+
+  if (todayItems.length > 0) return todayItems
+
+  return prisma.hotItem.findMany({
+    where: sourceWhere,
+    orderBy,
+    take: limit,
+    include,
+  })
 }
 
 export async function getHotItemById(id: string) { return prisma.hotItem.findUnique({ where: { id }, include: { source: true, crawlRun: true } }) }

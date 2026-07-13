@@ -27,6 +27,7 @@ const sources = [
   { name:'央视新闻',slug:'cctv',type:'rss',region:'china',defaultCategory:'society',url:'https://rsshub.app/cctv/news',fetchIntervalMinutes:20,enabled:false },
   // ── 国际 ──
   { name:'Hacker News',slug:'hacker-news',type:'rss',region:'global',defaultCategory:'tech',url:'https://hnrss.org/frontpage',fetchIntervalMinutes:10,enabled:true },
+  { name:'GitHub 每日趋势',slug:'github-trending-daily',type:'githubTrending',region:'global',defaultCategory:'tech',url:'https://github.com/trending?since=daily',fetchIntervalMinutes:60,enabled:true },
   { name:'The Verge',slug:'the-verge',type:'rss',region:'global',defaultCategory:'tech',url:'https://www.theverge.com/rss/index.xml',fetchIntervalMinutes:20,enabled:true },
   { name:'TechCrunch',slug:'techcrunch',type:'rss',region:'global',defaultCategory:'tech',url:'https://techcrunch.com/feed/',fetchIntervalMinutes:20,enabled:true },
   { name:'Wired',slug:'wired',type:'rss',region:'global',defaultCategory:'tech',url:'https://www.wired.com/feed/rss',fetchIntervalMinutes:30,enabled:true },
