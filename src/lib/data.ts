@@ -1,10 +1,22 @@
 import { prisma } from '@/lib/prisma'
-import type { Prisma } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 
 export interface HotItemFilters {
   region?: string; category?: string; aiSubcategory?: string; sourceId?: string
   search?: string; language?: string; sort?: 'collectedAt' | 'heat' | 'score' | 'publishedAt'
   limit?: number; offset?: number
+}
+
+export interface SearchHotItemFilters {
+  query?: string
+  from?: string
+  to?: string
+  region?: string
+  category?: string
+  sourceId?: string
+  sort?: 'relevance' | 'heat' | 'publishedAt'
+  page?: number
+  pageSize?: number
 }
 
 const SHANGHAI_UTC_OFFSET_MS = 8 * 60 * 60 * 1000
@@ -21,6 +33,25 @@ function getShanghaiDayRange(now = new Date()) {
   )
 
   return { start, end: new Date(start.getTime() + DAY_MS) }
+}
+
+function parseShanghaiDate(value: string | undefined) {
+  const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!match) return undefined
+
+  const [, year, month, day] = match
+  const date = new Date(
+    Date.UTC(Number(year), Number(month) - 1, Number(day)) - SHANGHAI_UTC_OFFSET_MS
+  )
+  const shanghaiDate = new Date(date.getTime() + SHANGHAI_UTC_OFFSET_MS)
+
+  if (
+    shanghaiDate.getUTCFullYear() !== Number(year) ||
+    shanghaiDate.getUTCMonth() !== Number(month) - 1 ||
+    shanghaiDate.getUTCDate() !== Number(day)
+  ) return undefined
+
+  return date
 }
 
 export async function getHotItems(filters: HotItemFilters = {}) {
@@ -41,7 +72,10 @@ export async function getDailyHotItems(limit = 100) {
   const { start, end } = getShanghaiDayRange()
 
   return prisma.hotItem.findMany({
-    where: { collectedAt: { gte: start, lt: end } },
+    where: {
+      collectedAt: { gte: start, lt: end },
+      category: { not: 'entertainment' },
+    },
     orderBy: [{ heat: 'desc' }, { score: 'desc' }, { collectedAt: 'desc' }],
     take: limit,
     include: { source: { select: { name: true, slug: true, region: true } } },
@@ -71,6 +105,94 @@ export async function getGithubDailyHotItems(limit = 50) {
     orderBy,
     take: limit,
     include,
+  })
+}
+
+export async function searchHotItems(filters: SearchHotItemFilters = {}) {
+  const query = filters.query?.trim() ?? ''
+  const pageSize = Math.min(Math.max(filters.pageSize ?? 20, 1), 100)
+  const page = Math.max(filters.page ?? 1, 1)
+  const skip = (page - 1) * pageSize
+  const from = parseShanghaiDate(filters.from)
+  const to = parseShanghaiDate(filters.to)
+  const toExclusive = to ? new Date(to.getTime() + DAY_MS) : undefined
+  const where: Prisma.HotItemWhereInput = {}
+
+  if (query) {
+    where.OR = [
+      { title: { contains: query, mode: 'insensitive' } },
+      { summary: { contains: query, mode: 'insensitive' } },
+      { tags: { contains: query, mode: 'insensitive' } },
+      { sourceName: { contains: query, mode: 'insensitive' } },
+    ]
+  }
+  if (from || toExclusive) where.collectedAt = { ...(from ? { gte: from } : {}), ...(toExclusive ? { lt: toExclusive } : {}) }
+  if (filters.region) where.region = filters.region
+  if (filters.category) where.category = filters.category
+  if (filters.sourceId) where.sourceId = filters.sourceId
+
+  const include = { source: { select: { name: true, slug: true, region: true } } } as const
+  const total = await prisma.hotItem.count({ where })
+
+  if (filters.sort !== 'relevance' || !query) {
+    const orderBy: Prisma.HotItemOrderByWithRelationInput[] = filters.sort === 'publishedAt'
+      ? [{ publishedAt: { sort: 'desc', nulls: 'last' } }, { collectedAt: 'desc' }]
+      : filters.sort === 'heat'
+        ? [{ heat: 'desc' }, { collectedAt: 'desc' }]
+        : [{ collectedAt: 'desc' }]
+    const items = await prisma.hotItem.findMany({ where, orderBy, skip, take: pageSize, include })
+    return { items, total, page, pageSize, pageCount: Math.max(Math.ceil(total / pageSize), 1) }
+  }
+
+  const pattern = `%${query}%`
+  const prefixPattern = `${query}%`
+  const clauses: Prisma.Sql[] = [Prisma.sql`(
+    "title" ILIKE ${pattern} OR
+    COALESCE("summary", '') ILIKE ${pattern} OR
+    "tags" ILIKE ${pattern} OR
+    "sourceName" ILIKE ${pattern}
+  )`]
+  if (from) clauses.push(Prisma.sql`"collectedAt" >= ${from}`)
+  if (toExclusive) clauses.push(Prisma.sql`"collectedAt" < ${toExclusive}`)
+  if (filters.region) clauses.push(Prisma.sql`"region" = ${filters.region}`)
+  if (filters.category) clauses.push(Prisma.sql`"category" = ${filters.category}`)
+  if (filters.sourceId) clauses.push(Prisma.sql`"sourceId" = ${filters.sourceId}`)
+
+  const rankedIds = await prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    SELECT "id"
+    FROM "HotItem"
+    WHERE ${Prisma.join(clauses, ' AND ')}
+    ORDER BY
+      CASE
+        WHEN LOWER("title") = LOWER(${query}) THEN 100
+        WHEN "title" ILIKE ${prefixPattern} THEN 80
+        WHEN "title" ILIKE ${pattern} THEN 60
+        WHEN "sourceName" ILIKE ${pattern} THEN 40
+        WHEN "tags" ILIKE ${pattern} THEN 30
+        ELSE 20
+      END DESC,
+      "heat" DESC,
+      "collectedAt" DESC
+    LIMIT ${pageSize}
+    OFFSET ${skip}
+  `)
+  const ids = rankedIds.map(item => item.id)
+  const unorderedItems = ids.length > 0
+    ? await prisma.hotItem.findMany({ where: { id: { in: ids } }, include })
+    : []
+  const byId = new Map(unorderedItems.map(item => [item.id, item]))
+  const items = ids.flatMap(id => {
+    const item = byId.get(id)
+    return item ? [item] : []
+  })
+
+  return { items, total, page, pageSize, pageCount: Math.max(Math.ceil(total / pageSize), 1) }
+}
+
+export async function getSourceOptions() {
+  return prisma.source.findMany({
+    orderBy: { name: 'asc' },
+    select: { id: true, name: true },
   })
 }
 
