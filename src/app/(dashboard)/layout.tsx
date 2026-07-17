@@ -1,12 +1,24 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/layout/sidebar'
 import { Header } from '@/components/layout/header'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const router = useRouter()
+
+  useEffect(() => {
+    const refresh = () => router.refresh()
+    const timer = window.setInterval(refresh, 60_000)
+    window.addEventListener('focus', refresh)
+    return () => {
+      window.clearInterval(timer)
+      window.removeEventListener('focus', refresh)
+    }
+  }, [router])
 
   return (
     <div className="min-h-screen bg-muted/40">

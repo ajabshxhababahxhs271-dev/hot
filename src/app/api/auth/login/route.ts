@@ -21,6 +21,7 @@ export async function POST(request: Request) {
     sameSite: 'lax',
     path: '/',
     maxAge: SESSION_TTL_SECONDS,
+    expires: new Date(Date.now() + SESSION_TTL_SECONDS * 1000),
   })
   return response
 }
