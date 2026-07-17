@@ -52,6 +52,9 @@ npm run crawl
 ```bash
 DATABASE_URL=你的 Neon 连接字符串
 CRON_SECRET=一个足够长的随机密钥
+AUTH_SECRET=另一个足够长的随机密钥
+ADMIN_USERNAME=管理员用户名
+ADMIN_PASSWORD=管理员强密码
 ```
 
 4. 重新 Deploy
@@ -96,15 +99,23 @@ npm run dev         # → http://localhost:3000
 | `/crawl-log` | 采集日志（每次采集耗时/新增/跳过） |
 | `/settings` | 系统设置 |
 
-## 数据源状态（30 个）
+访问后台前需要登录。Vercel 环境变量中的 `ADMIN_USERNAME`、`ADMIN_PASSWORD` 和 `AUTH_SECRET` 必须同时配置；登录会话有效期为 7 天。
 
-### ✅ 已真实采集成功（12 个）
+## 数据源状态（60 个配置，36 个默认启用）
+
+数据源持续优先扩展官方直连 RSS、公开 API 和专用 crawler，尽量减少对 RSSHub 的依赖。当前新增的官方直连源包括 GitHub Blog、Kubernetes Blog 和 Mozilla Hacks；每个源的实时状态、最近成功时间和错误信息可在 `/sources` 查看。
+
+### ✅ 已配置的主要直连源
 
 | 来源 | 地区 | 类型 | 分类 |
 |------|------|------|------|
 | B站热门 | 🇨🇳 国内 | API (bilibili) | 娱乐 |
 | 36氪 | 🇨🇳 国内 | RSS | 科技 |
 | Hacker News | 🌍 国际 | RSS | 科技 |
+| GitHub 每日趋势 | 🌍 国际 | crawler | 科技 |
+| GitHub Blog | 🌍 国际 | RSS | 科技 |
+| Kubernetes Blog | 🌍 国际 | RSS | 科技 |
+| Mozilla Hacks | 🌍 国际 | RSS | 科技 |
 | The Verge | 🌍 国际 | RSS | 科技 |
 | TechCrunch | 🌍 国际 | RSS | 科技 |
 | Wired | 🌍 国际 | RSS | 科技 |
@@ -115,7 +126,7 @@ npm run dev         # → http://localhost:3000
 | Techmeme | 🌍 国际 | RSS | 科技 |
 | Bloomberg via Google News | 🌍 国际 | RSS | 财经 |
 
-### ⏸ 因网络限制暂时 disabled（18 个）
+### ⏸ 因网络限制、反爬或认证暂时 disabled
 
 大多使用 RSSHub (rsshub.app) 代理，当前网络不可达；部分站点反爬严格或需认证：
 

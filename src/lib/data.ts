@@ -218,9 +218,20 @@ export async function getCategoryStats() { const items = await prisma.hotItem.gr
 export async function getRegionStats() { const items = await prisma.hotItem.groupBy({ by: ['region'], _count: true }); return items.map(i => ({ region: i.region, count: i._count })) }
 
 export async function getHotItemsByHour() {
-  const now = new Date(); const hours: { hour: string; count: number }[] = []
-  for (let i = 23; i >= 0; i--) { const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), i, 0, 0); const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), i, 59, 59); hours.push({ hour: `${i}:00`, count: await prisma.hotItem.count({ where: { collectedAt: { gte: start, lte: end } } }) }) }
-  return hours
+  const { start, end } = getShanghaiDayRange()
+  const rows = await prisma.$queryRaw<Array<{ hour: number; count: number }>>(Prisma.sql`
+    SELECT EXTRACT(HOUR FROM ("collectedAt" AT TIME ZONE 'Asia/Shanghai'))::int AS hour,
+           COUNT(*)::int AS count
+    FROM "HotItem"
+    WHERE "collectedAt" >= ${start} AND "collectedAt" < ${end}
+    GROUP BY 1
+    ORDER BY 1
+  `)
+  const counts = new Map(rows.map(row => [row.hour, row.count]))
+  return Array.from({ length: 24 }, (_, index) => {
+    const hour = 23 - index
+    return { hour: `${hour}:00`, count: counts.get(hour) ?? 0 }
+  })
 }
 
 export async function getSources() { return prisma.source.findMany({ orderBy: { name: 'asc' }, include: { _count: { select: { items: true, crawlRuns: true } } } }) }

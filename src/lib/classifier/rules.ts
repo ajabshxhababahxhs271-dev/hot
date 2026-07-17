@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto'
+
 export interface Classification {
   region: 'china' | 'global'
   category: string
@@ -65,6 +67,11 @@ const TAG_RULES = [
 ]
 
 export function generateFingerprint(title: string, url: string): string {
+  const normalized = `${title.trim().toLowerCase()}|${url.trim().toLowerCase()}`
+  return createHash('sha256').update(normalized).digest('hex')
+}
+
+export function generateLegacyFingerprint(title: string, url: string): string {
   const normalized = `${title.trim().toLowerCase()}|${url.trim().toLowerCase()}`
   let hash = 0
   for (let i = 0; i < normalized.length; i++) {

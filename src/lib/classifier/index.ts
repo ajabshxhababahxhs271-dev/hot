@@ -1,1 +1,1 @@
-export { classify, generateFingerprint, type Classification, type ClassifierInput, type LlmClassifier, createLlmClassifier } from './rules'
+export { classify, generateFingerprint, generateLegacyFingerprint, type Classification, type ClassifierInput, type LlmClassifier, createLlmClassifier } from './rules'

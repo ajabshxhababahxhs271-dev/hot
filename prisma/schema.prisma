@@ -69,15 +69,17 @@ model Source {
 }
 
 model HotItemSnapshot {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   hotItemId   String
-  hotItem     HotItem  @relation(fields: [hotItemId], references: [id], onDelete: Cascade)
+  hotItem     HotItem   @relation(fields: [hotItemId], references: [id], onDelete: Cascade)
   sourceId    String
-  source      Source   @relation(fields: [sourceId], references: [id])
+  source      Source    @relation(fields: [sourceId], references: [id])
+  crawlRunId  String?
+  crawlRun    CrawlRun? @relation(fields: [crawlRunId], references: [id])
   rank        Int?
-  heat        Int      @default(0)
-  score       Int      @default(0)
-  collectedAt DateTime @default(now())
+  heat        Int       @default(0)
+  score       Int       @default(0)
+  collectedAt DateTime  @default(now())
 
   @@index([hotItemId, collectedAt])
   @@index([sourceId, collectedAt])
@@ -96,7 +98,8 @@ model CrawlRun {
   skippedItems Int       @default(0)
   errorMessage String?
 
-  hotItems HotItem[]
+  hotItems  HotItem[]
+  snapshots HotItemSnapshot[]
 }
 
 model Tag {

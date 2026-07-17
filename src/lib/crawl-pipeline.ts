@@ -1,6 +1,14 @@
 import { prisma } from '@/lib/prisma'
 import { getCrawler } from '@/lib/crawlers'
-import { classify, generateFingerprint } from '@/lib/classifier'
+import { classify, generateFingerprint, generateLegacyFingerprint } from '@/lib/classifier'
+import type { Prisma } from '@prisma/client'
+import { createHash } from 'node:crypto'
+
+function tagSlug(tag: string) {
+  const normalized = tag.toLowerCase().replace(/\s+/g, '-').slice(0, 80) || 'tag'
+  const suffix = createHash('sha256').update(tag).digest('hex').slice(0, 8)
+  return `${normalized}-${suffix}`
+}
 
 export async function runCrawlPipeline(sourceId: string) {
   const source = await prisma.source.findUnique({ where: { id: sourceId } })
@@ -17,33 +25,58 @@ export async function runCrawlPipeline(sourceId: string) {
     if (result.error && result.items.length === 0) throw new Error(result.error)
 
     let newItems = 0, skippedItems = 0
-
+    const rawItemsByFingerprint = new Map<string, typeof result.items[number]>()
     for (const raw of result.items) {
+      rawItemsByFingerprint.set(generateFingerprint(raw.title, raw.url), raw)
+    }
+    const rawItems = Array.from(rawItemsByFingerprint.values())
+    const fingerprints = rawItems.flatMap(raw => [generateFingerprint(raw.title, raw.url), generateLegacyFingerprint(raw.title, raw.url)])
+    const existingItems = await prisma.hotItem.findMany({ where: { fingerprint: { in: fingerprints } } })
+    const existingByFingerprint = new Map(existingItems.map(item => [item.fingerprint, item]))
+    const newRows: Prisma.HotItemCreateManyInput[] = []
+    const updates: Array<{ id: string; data: Prisma.HotItemUpdateInput }> = []
+    const snapshots: Prisma.HotItemSnapshotCreateManyInput[] = []
+    const tagCounts = new Map<string, number>()
+
+    for (const raw of rawItems) {
       try {
         const fingerprint = generateFingerprint(raw.title, raw.url)
-        const existing = await prisma.hotItem.findUnique({ where: { fingerprint } })
+        const legacyFingerprint = generateLegacyFingerprint(raw.title, raw.url)
+        const existing = existingByFingerprint.get(fingerprint) ?? existingByFingerprint.get(legacyFingerprint)
         if (existing) {
           const collectedAt = new Date()
           const score = Math.max(existing.score, raw.score ?? 0)
           const rank = raw.rank ?? existing.rank
           const heat = Math.max(existing.heat + 1, raw.heat ?? 0)
-          await prisma.hotItem.update({ where: { id: existing.id }, data: { score, rank, heat, collectedAt } })
-          await prisma.hotItemSnapshot.create({ data: { hotItemId: existing.id, sourceId: source.id, rank, heat, score, collectedAt } })
-          skippedItems++; continue
+          updates.push({ id: existing.id, data: { score, rank, heat, collectedAt } })
+          snapshots.push({ hotItemId: existing.id, sourceId: source.id, crawlRunId: run.id, rank, heat, score, collectedAt })
+          skippedItems++
+          continue
         }
         const classification = classify({ title: raw.title, summary: raw.summary, url: raw.url, sourceName: source.name, defaultCategory: source.defaultCategory, defaultRegion: source.region })
         const tags = [...new Set([...classification.tags, ...(raw.tags ?? [])])]
         const collectedAt = new Date()
-        const item = await prisma.hotItem.create({ data: { title: raw.title, url: raw.url, sourceId: source.id, sourceName: source.name, region: classification.region, category: classification.category, aiSubcategory: classification.aiSubcategory, language: classification.language, summary: raw.summary ?? null, rawContent: raw.rawContent ?? null, score: raw.score ?? 0, rank: raw.rank ?? null, heat: raw.heat ?? 1, fingerprint, tags: tags.join(','), publishedAt: raw.publishedAt ?? null, collectedAt, crawlRunId: run.id } })
-        await prisma.hotItemSnapshot.create({ data: { hotItemId: item.id, sourceId: source.id, rank: item.rank, heat: item.heat, score: item.score, collectedAt } })
-        for (const tag of tags) { await prisma.tag.upsert({ where: { name: tag }, update: { count: { increment: 1 } }, create: { name: tag, slug: tag.toLowerCase().replace(/\s+/g,'-'), count: 1 } }) }
-        newItems++
+        newRows.push({ title: raw.title, url: raw.url, sourceId: source.id, sourceName: source.name, region: classification.region, category: classification.category, aiSubcategory: classification.aiSubcategory, language: classification.language, summary: raw.summary ?? null, rawContent: raw.rawContent ?? null, score: raw.score ?? 0, rank: raw.rank ?? null, heat: raw.heat ?? 1, fingerprint, tags: tags.join(','), publishedAt: raw.publishedAt ?? null, collectedAt, crawlRunId: run.id })
+        for (const tag of tags) tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1)
       } catch (itemErr) { console.error(`Error processing "${raw.title}":`, itemErr) }
     }
 
+    const createdItems = newRows.length > 0
+      ? await prisma.hotItem.createManyAndReturn({ data: newRows, select: { id: true, rank: true, heat: true, score: true, collectedAt: true } })
+      : []
+    newItems = createdItems.length
+    for (const item of createdItems) snapshots.push({ hotItemId: item.id, sourceId: source.id, crawlRunId: run.id, rank: item.rank, heat: item.heat, score: item.score, collectedAt: item.collectedAt })
+
+    if (updates.length > 0) await prisma.$transaction(updates.map(update => prisma.hotItem.update({ where: { id: update.id }, data: update.data })))
+    if (snapshots.length > 0) await prisma.hotItemSnapshot.createMany({ data: snapshots })
+    if (tagCounts.size > 0) {
+      await prisma.$transaction(Array.from(tagCounts.entries()).map(([tag, count]) => prisma.tag.upsert({ where: { name: tag }, update: { count: { increment: count } }, create: { name: tag, slug: tagSlug(tag), count } })))
+    }
+
     const status = result.error ? 'partial' : 'success'
+    const currentItemCount = await prisma.hotItem.count({ where: { sourceId } })
     await prisma.crawlRun.update({ where: { id: run.id }, data: { status, finishedAt: new Date(), itemCount: result.items.length, newItems, skippedItems, errorMessage: result.error ?? null } })
-    await prisma.source.update({ where: { id: sourceId }, data: { lastStatus: status, lastSuccessAt: new Date(), lastError: result.error ?? null, itemCount: { increment: newItems } } })
+    await prisma.source.update({ where: { id: sourceId }, data: { lastStatus: status, lastSuccessAt: new Date(), lastError: result.error ?? null, itemCount: currentItemCount } })
     return { status, total: result.items.length, newItems, skipped: skippedItems, error: result.error }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
