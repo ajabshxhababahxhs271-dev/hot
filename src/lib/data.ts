@@ -236,3 +236,4 @@ export async function getHotItemsByHour() {
 
 export async function getSources() { return prisma.source.findMany({ orderBy: { name: 'asc' }, include: { _count: { select: { items: true, crawlRuns: true } } } }) }
 export async function getCrawlRuns(limit = 50) { return prisma.crawlRun.findMany({ orderBy: { startedAt: 'desc' }, take: limit, include: { source: { select: { name: true, slug: true } } } }) }
+export async function getCronInvocations(limit = 20) { return prisma.cronInvocation.findMany({ orderBy: { requestedAt: 'desc' }, take: limit }) }

@@ -102,6 +102,23 @@ model CrawlRun {
   snapshots HotItemSnapshot[]
 }
 
+model CronInvocation {
+  id           String    @id @default(cuid())
+  status       String    @default("registered")
+  mode         String    @default("background")
+  sourceLimit  Int
+  sourceCount  Int       @default(0)
+  newItems     Int       @default(0)
+  skippedItems Int       @default(0)
+  errorMessage String?
+  requestedAt  DateTime  @default(now())
+  startedAt    DateTime?
+  finishedAt   DateTime?
+
+  @@index([requestedAt])
+  @@index([status])
+}
+
 model Tag {
   id    String @id @default(cuid())
   name  String @unique
