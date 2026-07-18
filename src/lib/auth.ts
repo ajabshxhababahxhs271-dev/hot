@@ -63,15 +63,15 @@ export async function createSessionToken() {
 
 export async function verifySessionToken(token: string | undefined) {
   if (!token || !isAuthConfigured()) return false
-  const [expiresAtValue, signature] = token.split('.')
-  const username = process.env.ADMIN_USERNAME
-  const expiresAt = Number(expiresAtValue)
-  if (!username || !signature || !Number.isFinite(expiresAt) || expiresAt <= Math.floor(Date.now() / 1000)) return false
-
-  const secret = process.env.AUTH_SECRET
-  if (!secret) return false
-  const key = await getSigningKey(secret, ['verify'])
   try {
+    const [expiresAtValue, signature] = token.split('.')
+    const username = process.env.ADMIN_USERNAME
+    const expiresAt = Number(expiresAtValue)
+    if (!username || !signature || !Number.isFinite(expiresAt) || expiresAt <= Math.floor(Date.now() / 1000)) return false
+
+    const secret = process.env.AUTH_SECRET
+    if (!secret) return false
+    const key = await getSigningKey(secret, ['verify'])
     return await crypto.subtle.verify('HMAC', key, base64UrlDecode(signature), encoder.encode(`${username}.${expiresAt}`))
   } catch {
     return false

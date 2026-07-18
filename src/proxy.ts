@@ -10,7 +10,11 @@ export async function proxy(request: NextRequest) {
   }
 
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value
-  if (await verifySessionToken(token)) return NextResponse.next()
+  try {
+    if (await verifySessionToken(token)) return NextResponse.next()
+  } catch {
+    // Treat malformed/expired sessions as unauthenticated instead of failing the request.
+  }
 
   destination.searchParams.set('next', `${request.nextUrl.pathname}${request.nextUrl.search}`)
   return NextResponse.redirect(destination)
